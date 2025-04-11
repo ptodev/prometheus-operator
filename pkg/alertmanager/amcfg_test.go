@@ -687,20 +687,20 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 				},
 			},
 		)
-		cb := newConfigBuilder(
+		cb := NewConfigBuilder(
 			log.NewNopLogger(),
 			version,
 			assets.NewStore(kclient.CoreV1(), kclient.CoreV1()),
 			tt.matcherStrategy,
 		)
 		t.Run(tt.name, func(t *testing.T) {
-			err := cb.initializeFromAlertmanagerConfig(context.TODO(), tt.globalConfig, tt.amConfig)
+			err := cb.InitializeFromAlertmanagerConfig(context.TODO(), tt.globalConfig, tt.amConfig)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("initializeFromAlertmanagerConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			require.Equal(t, tt.want, cb.cfg)
+			require.Equal(t, tt.want, cb.Cfg)
 		})
 	}
 }
@@ -2244,14 +2244,14 @@ templates: []
 				tc.amVersion = &version
 			}
 
-			cb := newConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
-			cb.cfg = &tc.baseConfig
+			cb := NewConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
+			cb.Cfg = &tc.baseConfig
 
-			if err := cb.addAlertmanagerConfigs(context.Background(), tc.amConfigs); err != nil {
+			if err := cb.AddAlertmanagerConfigs(context.Background(), tc.amConfigs); err != nil {
 				t.Fatal(err)
 			}
 
-			cfgBytes, err := cb.marshalJSON()
+			cfgBytes, err := cb.MarshalJSON()
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	dockerref "github.com/docker/distribution/reference"
+	dockerref "github.com/distribution/reference"
 )
 
 // BuildImagePath builds a container image path based on

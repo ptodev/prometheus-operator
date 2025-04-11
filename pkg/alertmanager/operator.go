@@ -928,7 +928,7 @@ func (c *Operator) provisionAlertmanagerConfiguration(ctx context.Context, am *m
 
 	var (
 		additionalData map[string][]byte
-		cfgBuilder     = newConfigBuilder(namespacedLogger, version, store, am.Spec.AlertmanagerConfigMatcherStrategy)
+		cfgBuilder     = NewConfigBuilder(namespacedLogger, version, store, am.Spec.AlertmanagerConfigMatcherStrategy)
 	)
 
 	if am.Spec.AlertmanagerConfiguration != nil {
@@ -939,7 +939,7 @@ func (c *Operator) provisionAlertmanagerConfiguration(ctx context.Context, am *m
 			return errors.Wrap(err, "failed to get global AlertmanagerConfig")
 		}
 
-		err = cfgBuilder.initializeFromAlertmanagerConfig(ctx, am.Spec.AlertmanagerConfiguration.Global, globalAmConfig)
+		err = cfgBuilder.InitializeFromAlertmanagerConfig(ctx, am.Spec.AlertmanagerConfiguration.Global, globalAmConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize from global AlertmangerConfig")
 		}
@@ -947,10 +947,10 @@ func (c *Operator) provisionAlertmanagerConfiguration(ctx context.Context, am *m
 		// set templates
 		for _, v := range am.Spec.AlertmanagerConfiguration.Templates {
 			if v.ConfigMap != nil {
-				cfgBuilder.cfg.Templates = append(cfgBuilder.cfg.Templates, path.Join(alertmanagerTemplatesDir, v.ConfigMap.Key))
+				cfgBuilder.Cfg.Templates = append(cfgBuilder.Cfg.Templates, path.Join(alertmanagerTemplatesDir, v.ConfigMap.Key))
 			}
 			if v.Secret != nil {
-				cfgBuilder.cfg.Templates = append(cfgBuilder.cfg.Templates, path.Join(alertmanagerTemplatesDir, v.Secret.Key))
+				cfgBuilder.Cfg.Templates = append(cfgBuilder.Cfg.Templates, path.Join(alertmanagerTemplatesDir, v.Secret.Key))
 			}
 		}
 	} else {
@@ -965,17 +965,17 @@ func (c *Operator) provisionAlertmanagerConfiguration(ctx context.Context, am *m
 			return errors.Wrap(err, "failed to retrieve configuration from secret")
 		}
 
-		err = cfgBuilder.initializeFromRawConfiguration(amRawConfiguration)
+		err = cfgBuilder.InitializeFromRawConfiguration(amRawConfiguration)
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize from secret")
 		}
 	}
 
-	if err := cfgBuilder.addAlertmanagerConfigs(ctx, amConfigs); err != nil {
+	if err := cfgBuilder.AddAlertmanagerConfigs(ctx, amConfigs); err != nil {
 		return errors.Wrap(err, "failed to generate Alertmanager configuration")
 	}
 
-	generatedConfig, err := cfgBuilder.marshalJSON()
+	generatedConfig, err := cfgBuilder.MarshalJSON()
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal configuration")
 	}
