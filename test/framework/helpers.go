@@ -224,7 +224,7 @@ func (f *Framework) GetMetricVal(ctx context.Context, ns, podName, portNumberOrN
 		return 0, err
 	}
 
-	parser := textparse.NewPromParser(resp)
+	parser := textparse.NewPromParser(resp, labels.NewSymbolTable())
 	for {
 		entry, err := parser.Next()
 		if err != nil {
