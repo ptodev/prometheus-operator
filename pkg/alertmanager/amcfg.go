@@ -181,9 +181,9 @@ func (ne *namespaceEnforcer) processRoute(crKey types.NamespacedName, r *route) 
 	return r
 }
 
-// configBuilder knows how to build an Alertmanager configuration from a raw
+// ConfigBuilder knows how to build an Alertmanager configuration from a raw
 // configuration and/or AlertmanagerConfig objects.
-type configBuilder struct {
+type ConfigBuilder struct {
 	cfg       *alertmanagerConfig
 	logger    log.Logger
 	amVersion semver.Version
@@ -191,8 +191,8 @@ type configBuilder struct {
 	enforcer  enforcer
 }
 
-func newConfigBuilder(logger log.Logger, amVersion semver.Version, store *assets.Store, matcherStrategy monitoringv1.AlertmanagerConfigMatcherStrategy) *configBuilder {
-	cg := &configBuilder{
+func NewConfigBuilder(logger log.Logger, amVersion semver.Version, store *assets.Store, matcherStrategy monitoringv1.AlertmanagerConfigMatcherStrategy) *ConfigBuilder {
+	cg := &ConfigBuilder{
 		logger:    logger,
 		amVersion: amVersion,
 		store:     store,
@@ -210,12 +210,12 @@ func getEnforcer(matcherStrategy monitoringv1.AlertmanagerConfigMatcherStrategy,
 	}
 }
 
-func (cb *configBuilder) marshalJSON() ([]byte, error) {
+func (cb *ConfigBuilder) MarshalJSON() ([]byte, error) {
 	return yaml.Marshal(cb.cfg)
 }
 
 // initializeFromAlertmanagerConfig initializes the configuration from an AlertmanagerConfig object.
-func (cb *configBuilder) initializeFromAlertmanagerConfig(ctx context.Context, globalConfig *monitoringv1.AlertmanagerGlobalConfig, amConfig *monitoringv1alpha1.AlertmanagerConfig) error {
+func (cb *ConfigBuilder) initializeFromAlertmanagerConfig(ctx context.Context, globalConfig *monitoringv1.AlertmanagerGlobalConfig, amConfig *monitoringv1alpha1.AlertmanagerConfig) error {
 	globalAlertmanagerConfig := &alertmanagerConfig{}
 
 	crKey := types.NamespacedName{
@@ -265,8 +265,8 @@ func (cb *configBuilder) initializeFromAlertmanagerConfig(ctx context.Context, g
 	return nil
 }
 
-// initializeFromRawConfiguration initializes the configuration from raw data.
-func (cb *configBuilder) initializeFromRawConfiguration(b []byte) error {
+// InitializeFromRawConfiguration initializes the configuration from raw data.
+func (cb *ConfigBuilder) InitializeFromRawConfiguration(b []byte) error {
 	globalAlertmanagerConfig, err := alertmanagerConfigFromBytes(b)
 	if err != nil {
 		return err
@@ -276,8 +276,8 @@ func (cb *configBuilder) initializeFromRawConfiguration(b []byte) error {
 	return nil
 }
 
-// addAlertmanagerConfigs adds AlertmanagerConfig objects to the current configuration.
-func (cb *configBuilder) addAlertmanagerConfigs(ctx context.Context, amConfigs map[string]*monitoringv1alpha1.AlertmanagerConfig) error {
+// AddAlertmanagerConfigs adds AlertmanagerConfig objects to the current configuration.
+func (cb *ConfigBuilder) AddAlertmanagerConfigs(ctx context.Context, amConfigs map[string]*monitoringv1alpha1.AlertmanagerConfig) error {
 	// amConfigIdentifiers is a sorted slice of keys from
 	// amConfigs map, used to always generate the config in the
 	// same order.
@@ -349,7 +349,7 @@ func (cb *configBuilder) addAlertmanagerConfigs(ctx context.Context, amConfigs m
 	return cb.cfg.sanitize(cb.amVersion, cb.logger)
 }
 
-func (cb *configBuilder) getValidURLFromSecret(ctx context.Context, namespace string, selector v1.SecretKeySelector) (string, error) {
+func (cb *ConfigBuilder) getValidURLFromSecret(ctx context.Context, namespace string, selector v1.SecretKeySelector) (string, error) {
 	url, err := cb.store.GetSecretKey(ctx, namespace, selector)
 	if err != nil {
 		return "", fmt.Errorf("failed to get URL: %w", err)
@@ -362,7 +362,7 @@ func (cb *configBuilder) getValidURLFromSecret(ctx context.Context, namespace st
 	return url, nil
 }
 
-func (cb *configBuilder) convertGlobalConfig(ctx context.Context, in *monitoringv1.AlertmanagerGlobalConfig, crKey types.NamespacedName) (*globalConfig, error) {
+func (cb *ConfigBuilder) convertGlobalConfig(ctx context.Context, in *monitoringv1.AlertmanagerGlobalConfig, crKey types.NamespacedName) (*globalConfig, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -434,7 +434,7 @@ func (cb *configBuilder) convertGlobalConfig(ctx context.Context, in *monitoring
 	return out, nil
 }
 
-func (cb *configBuilder) convertRoute(in *monitoringv1alpha1.Route, crKey types.NamespacedName) *route {
+func (cb *ConfigBuilder) convertRoute(in *monitoringv1alpha1.Route, crKey types.NamespacedName) *route {
 	if in == nil {
 		return nil
 	}
@@ -506,7 +506,7 @@ func (cb *configBuilder) convertRoute(in *monitoringv1alpha1.Route, crKey types.
 }
 
 // convertReceiver converts a monitoringv1alpha1.Receiver to an alertmanager.receiver
-func (cb *configBuilder) convertReceiver(ctx context.Context, in *monitoringv1alpha1.Receiver, crKey types.NamespacedName) (*receiver, error) {
+func (cb *ConfigBuilder) convertReceiver(ctx context.Context, in *monitoringv1alpha1.Receiver, crKey types.NamespacedName) (*receiver, error) {
 	var pagerdutyConfigs []*pagerdutyConfig
 	if l := len(in.PagerDutyConfigs); l > 0 {
 		pagerdutyConfigs = make([]*pagerdutyConfig, l)
@@ -681,7 +681,7 @@ func (cb *configBuilder) convertReceiver(ctx context.Context, in *monitoringv1al
 	}, nil
 }
 
-func (cb *configBuilder) convertWebhookConfig(ctx context.Context, in monitoringv1alpha1.WebhookConfig, crKey types.NamespacedName) (*webhookConfig, error) {
+func (cb *ConfigBuilder) convertWebhookConfig(ctx context.Context, in monitoringv1alpha1.WebhookConfig, crKey types.NamespacedName) (*webhookConfig, error) {
 	out := &webhookConfig{
 		VSendResolved: in.SendResolved,
 	}
@@ -715,7 +715,7 @@ func (cb *configBuilder) convertWebhookConfig(ctx context.Context, in monitoring
 	return out, nil
 }
 
-func (cb *configBuilder) convertDiscordConfig(ctx context.Context, in monitoringv1alpha1.DiscordConfig, crKey types.NamespacedName) (*discordConfig, error) {
+func (cb *ConfigBuilder) convertDiscordConfig(ctx context.Context, in monitoringv1alpha1.DiscordConfig, crKey types.NamespacedName) (*discordConfig, error) {
 	out := &discordConfig{
 		VSendResolved: in.SendResolved,
 	}
@@ -745,7 +745,7 @@ func (cb *configBuilder) convertDiscordConfig(ctx context.Context, in monitoring
 	return out, nil
 }
 
-func (cb *configBuilder) convertSlackConfig(ctx context.Context, in monitoringv1alpha1.SlackConfig, crKey types.NamespacedName) (*slackConfig, error) {
+func (cb *ConfigBuilder) convertSlackConfig(ctx context.Context, in monitoringv1alpha1.SlackConfig, crKey types.NamespacedName) (*slackConfig, error) {
 	out := &slackConfig{
 		VSendResolved: in.SendResolved,
 		Channel:       in.Channel,
@@ -829,7 +829,7 @@ func (cb *configBuilder) convertSlackConfig(ctx context.Context, in monitoringv1
 	return out, nil
 }
 
-func (cb *configBuilder) convertPagerdutyConfig(ctx context.Context, in monitoringv1alpha1.PagerDutyConfig, crKey types.NamespacedName) (*pagerdutyConfig, error) {
+func (cb *ConfigBuilder) convertPagerdutyConfig(ctx context.Context, in monitoringv1alpha1.PagerDutyConfig, crKey types.NamespacedName) (*pagerdutyConfig, error) {
 	out := &pagerdutyConfig{
 		VSendResolved: in.SendResolved,
 		Class:         in.Class,
@@ -903,7 +903,7 @@ func (cb *configBuilder) convertPagerdutyConfig(ctx context.Context, in monitori
 	return out, nil
 }
 
-func (cb *configBuilder) convertOpsgenieConfig(ctx context.Context, in monitoringv1alpha1.OpsGenieConfig, crKey types.NamespacedName) (*opsgenieConfig, error) {
+func (cb *ConfigBuilder) convertOpsgenieConfig(ctx context.Context, in monitoringv1alpha1.OpsGenieConfig, crKey types.NamespacedName) (*opsgenieConfig, error) {
 	out := &opsgenieConfig{
 		VSendResolved: in.SendResolved,
 		APIURL:        in.APIURL,
@@ -961,7 +961,7 @@ func (cb *configBuilder) convertOpsgenieConfig(ctx context.Context, in monitorin
 	return out, nil
 }
 
-func (cb *configBuilder) convertWeChatConfig(ctx context.Context, in monitoringv1alpha1.WeChatConfig, crKey types.NamespacedName) (*weChatConfig, error) {
+func (cb *ConfigBuilder) convertWeChatConfig(ctx context.Context, in monitoringv1alpha1.WeChatConfig, crKey types.NamespacedName) (*weChatConfig, error) {
 	out := &weChatConfig{
 		VSendResolved: in.SendResolved,
 		APIURL:        in.APIURL,
@@ -993,7 +993,7 @@ func (cb *configBuilder) convertWeChatConfig(ctx context.Context, in monitoringv
 	return out, nil
 }
 
-func (cb *configBuilder) convertWebexConfig(ctx context.Context, in monitoringv1alpha1.WebexConfig, crKey types.NamespacedName) (*webexConfig, error) {
+func (cb *ConfigBuilder) convertWebexConfig(ctx context.Context, in monitoringv1alpha1.WebexConfig, crKey types.NamespacedName) (*webexConfig, error) {
 	out := &webexConfig{
 		VSendResolved: in.SendResolved,
 		RoomID:        in.RoomID,
@@ -1018,7 +1018,7 @@ func (cb *configBuilder) convertWebexConfig(ctx context.Context, in monitoringv1
 	return out, nil
 }
 
-func (cb *configBuilder) convertEmailConfig(ctx context.Context, in monitoringv1alpha1.EmailConfig, crKey types.NamespacedName) (*emailConfig, error) {
+func (cb *ConfigBuilder) convertEmailConfig(ctx context.Context, in monitoringv1alpha1.EmailConfig, crKey types.NamespacedName) (*emailConfig, error) {
 	out := &emailConfig{
 		VSendResolved: in.SendResolved,
 		To:            in.To,
@@ -1066,7 +1066,7 @@ func (cb *configBuilder) convertEmailConfig(ctx context.Context, in monitoringv1
 	return out, nil
 }
 
-func (cb *configBuilder) convertVictorOpsConfig(ctx context.Context, in monitoringv1alpha1.VictorOpsConfig, crKey types.NamespacedName) (*victorOpsConfig, error) {
+func (cb *ConfigBuilder) convertVictorOpsConfig(ctx context.Context, in monitoringv1alpha1.VictorOpsConfig, crKey types.NamespacedName) (*victorOpsConfig, error) {
 	out := &victorOpsConfig{
 		VSendResolved:     in.SendResolved,
 		APIURL:            in.APIURL,
@@ -1117,7 +1117,7 @@ func (cb *configBuilder) convertVictorOpsConfig(ctx context.Context, in monitori
 	return out, nil
 }
 
-func (cb *configBuilder) convertPushoverConfig(ctx context.Context, in monitoringv1alpha1.PushoverConfig, crKey types.NamespacedName) (*pushoverConfig, error) {
+func (cb *ConfigBuilder) convertPushoverConfig(ctx context.Context, in monitoringv1alpha1.PushoverConfig, crKey types.NamespacedName) (*pushoverConfig, error) {
 	out := &pushoverConfig{
 		VSendResolved: in.SendResolved,
 		Title:         in.Title,
@@ -1173,7 +1173,7 @@ func (cb *configBuilder) convertPushoverConfig(ctx context.Context, in monitorin
 	return out, nil
 }
 
-func (cb *configBuilder) convertTelegramConfig(ctx context.Context, in monitoringv1alpha1.TelegramConfig, crKey types.NamespacedName) (*telegramConfig, error) {
+func (cb *ConfigBuilder) convertTelegramConfig(ctx context.Context, in monitoringv1alpha1.TelegramConfig, crKey types.NamespacedName) (*telegramConfig, error) {
 	out := &telegramConfig{
 		VSendResolved:        in.SendResolved,
 		APIUrl:               in.APIURL,
@@ -1205,7 +1205,7 @@ func (cb *configBuilder) convertTelegramConfig(ctx context.Context, in monitorin
 	return out, nil
 }
 
-func (cb *configBuilder) convertSnsConfig(ctx context.Context, in monitoringv1alpha1.SNSConfig, crKey types.NamespacedName) (*snsConfig, error) {
+func (cb *ConfigBuilder) convertSnsConfig(ctx context.Context, in monitoringv1alpha1.SNSConfig, crKey types.NamespacedName) (*snsConfig, error) {
 	out := &snsConfig{
 		VSendResolved: in.SendResolved,
 		APIUrl:        in.ApiURL,
@@ -1251,7 +1251,7 @@ func (cb *configBuilder) convertSnsConfig(ctx context.Context, in monitoringv1al
 	return out, nil
 }
 
-func (cb *configBuilder) convertMSTeamsConfig(
+func (cb *ConfigBuilder) convertMSTeamsConfig(
 	ctx context.Context, in monitoringv1alpha1.MSTeamsConfig, crKey types.NamespacedName,
 ) (*msTeamsConfig, error) {
 	out := &msTeamsConfig{
@@ -1278,7 +1278,7 @@ func (cb *configBuilder) convertMSTeamsConfig(
 	return out, nil
 }
 
-func (cb *configBuilder) convertInhibitRule(in *monitoringv1alpha1.InhibitRule) *inhibitRule {
+func (cb *ConfigBuilder) convertInhibitRule(in *monitoringv1alpha1.InhibitRule) *inhibitRule {
 	matchersV2Allowed := cb.amVersion.GTE(semver.MustParse("0.22.0"))
 	var sourceMatchers []string
 	var targetMatchers []string
@@ -1426,7 +1426,7 @@ func makeNamespacedString(in string, crKey types.NamespacedName) string {
 	return crKey.Namespace + "/" + crKey.Name + "/" + in
 }
 
-func (cb *configBuilder) convertSMTPConfig(ctx context.Context, out *globalConfig, in monitoringv1.GlobalSMTPConfig, crKey types.NamespacedName) error {
+func (cb *ConfigBuilder) convertSMTPConfig(ctx context.Context, out *globalConfig, in monitoringv1.GlobalSMTPConfig, crKey types.NamespacedName) error {
 	if in.From != nil {
 		out.SMTPFrom = *in.From
 	}
@@ -1465,7 +1465,7 @@ func (cb *configBuilder) convertSMTPConfig(ctx context.Context, out *globalConfi
 	return nil
 }
 
-func (cb *configBuilder) convertHTTPConfigForV1(ctx context.Context, in monitoringv1.HTTPConfig, crKey types.NamespacedName) (*httpClientConfig, error) {
+func (cb *ConfigBuilder) convertHTTPConfigForV1(ctx context.Context, in monitoringv1.HTTPConfig, crKey types.NamespacedName) (*httpClientConfig, error) {
 	httpcfgv1alpha1 := &monitoringv1alpha1.HTTPConfig{
 		Authorization:     in.Authorization,
 		BasicAuth:         in.BasicAuth,
@@ -1478,7 +1478,7 @@ func (cb *configBuilder) convertHTTPConfigForV1(ctx context.Context, in monitori
 	return cb.convertHTTPConfig(ctx, *httpcfgv1alpha1, crKey)
 }
 
-func (cb *configBuilder) convertHTTPConfig(ctx context.Context, in monitoringv1alpha1.HTTPConfig, crKey types.NamespacedName) (*httpClientConfig, error) {
+func (cb *ConfigBuilder) convertHTTPConfig(ctx context.Context, in monitoringv1alpha1.HTTPConfig, crKey types.NamespacedName) (*httpClientConfig, error) {
 	out := &httpClientConfig{
 		ProxyURL:        in.ProxyURL,
 		FollowRedirects: in.FollowRedirects,
@@ -1549,7 +1549,7 @@ func (cb *configBuilder) convertHTTPConfig(ctx context.Context, in monitoringv1a
 	return out, nil
 }
 
-func (cb *configBuilder) convertTLSConfig(in *monitoringv1.SafeTLSConfig, crKey types.NamespacedName) *tlsConfig {
+func (cb *ConfigBuilder) convertTLSConfig(in *monitoringv1.SafeTLSConfig, crKey types.NamespacedName) *tlsConfig {
 	out := tlsConfig{
 		ServerName:         in.ServerName,
 		InsecureSkipVerify: in.InsecureSkipVerify,

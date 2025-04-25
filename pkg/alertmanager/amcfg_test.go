@@ -731,7 +731,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 				},
 			},
 		)
-		cb := newConfigBuilder(
+		cb := NewConfigBuilder(
 			log.NewNopLogger(),
 			version,
 			assets.NewStore(kclient.CoreV1(), kclient.CoreV1()),
@@ -1980,14 +1980,14 @@ func TestGenerateConfig(t *testing.T) {
 				tc.amVersion = &version
 			}
 
-			cb := newConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
+			cb := NewConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
 			cb.cfg = &tc.baseConfig
 
-			if err := cb.addAlertmanagerConfigs(context.Background(), tc.amConfigs); err != nil {
+			if err := cb.AddAlertmanagerConfigs(context.Background(), tc.amConfigs); err != nil {
 				t.Fatal(err)
 			}
 
-			cfgBytes, err := cb.marshalJSON()
+			cfgBytes, err := cb.MarshalJSON()
 			if err != nil {
 				t.Fatal(err)
 			}
